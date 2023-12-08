@@ -1,0 +1,9 @@
+matplotlib
+numpy
+scipy
+soundfile
+scikit-learn
+joblib
+decorator
+resampy
+numba
