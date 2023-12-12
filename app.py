@@ -3,6 +3,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import soundfile as sf
+import requests
+
+def download_file(url):
+    # Estrai l'ID del file dal link di Google Drive
+    file_id = url.split('/')[-2]
+
+    # Crea il link di download diretto
+    download_url = f'https://docs.google.com/uc?export=download&id={file_id}'
+
+    # Scarica il file
+    response = requests.get(download_url, allow_redirects=True)
+    local_filename = url.split('/')[-1] + '.wav'
+    open(local_filename, 'wb').write(response.content)
+
+    return local_filename
 
 def main():
     # Gradio Interface
@@ -10,10 +25,10 @@ def main():
         gr.Markdown(
             """
             # <div align="center"> Ilaria Audio Analyzer 💖 </div>
-            Audio Analyzer Software by Ilaria, Help me on [Ko-Fi](https://ko-fi.com/ilariaowo)\n
-            Special thanks to [Alex Murkoff](https://github.com/alexlnkp) for helping me coding it!
+            Audio Analyzer Software by Ilaria, Help me on [Ko-Fi!](https://ko-fi.com/ilariaowo)\n
+            Special thanks to Alex Murkoff for helping me coding it!
     
-            Need help with AI? [Join AI Hub!](https://discord.gg/aihub)
+            Need help with AI? Join [Join AI Hub!](https://discord.gg/aihub)
             """
         )
     
@@ -21,10 +36,19 @@ def main():
             with gr.Column():
                 audio_input = gr.Audio(type='filepath')
                 create_spec_butt = gr.Button(value='Create Spectrogram And Get Info', variant='primary')
+
             with gr.Column():
                 output_markdown = gr.Markdown(value="", visible=True)
                 image_output = gr.Image(type='filepath', interactive=False)
-    
+            
+                with gr.Accordion('Audio Downloader', open=False):
+                    url_input = gr.Textbox(value='', label='Google Drive Audio URL')
+                    download_butt = gr.Button(value='Download audio', variant='primary')
+                
+                download_butt.click(fn=download_file, inputs=[url_input], outputs=[audio_input])
+                create_spec_butt.click(fn=create_spectrogram_and_get_info, inputs=[audio_input], outputs=[output_markdown, image_output])
+            
+        download_butt.click(fn=download_file, inputs=[url_input], outputs=[audio_input])
         create_spec_butt.click(fn=create_spectrogram_and_get_info, inputs=[audio_input], outputs=[output_markdown, image_output])
         
         app.queue(max_size=1022).launch(share=True)
@@ -64,11 +88,12 @@ def create_spectrogram_and_get_info(audio_file):
     speed_in_kbps = audio_info.samplerate * bit_depth / 1000
     
     # Create a table with the audio file info
+    filename_without_extension, _ = os.path.splitext(os.path.basename(audio_file))
     info_table = f"""
     
     | Information | Value |
     | :---: | :---: |
-    | File Name | {os.path.basename(audio_file)} |
+    | File Name | {filename_without_extension} |
     | Duration | {int(minutes)} minutes - {int(seconds)} seconds - {int(milliseconds)} milliseconds |
     | Bitrate | {speed_in_kbps} kbp/s |
     | Audio Channels | {audio_info.channels} |
